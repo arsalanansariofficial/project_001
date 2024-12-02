@@ -1,17 +1,14 @@
-import { PrismaClient } from '@prisma/client';
+import express from 'express';
 
-const prisma = new PrismaClient();
+import urlRouter from './_routers/url';
+import notFound from './_middlewares/not-found';
 
-async function main() {
-  const urls = await prisma.url.findMany();
-  console.log(urls);
-}
+const PORT = process.env.PORT || 8080;
+const app = express();
 
-main()
-  .catch(async e => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+app.use(urlRouter);
+app.use(notFound);
+
+app.listen(PORT, function () {
+  console.log(`Application listening on PORT ${PORT}`);
+});
