@@ -6,7 +6,7 @@
   "type": "module",
   "main": "app/server.ts",
   "scripts": {
-    "dev": "tsx app/server.ts"
+    "dev": "tsx --watch app/server.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
@@ -16,5 +16,8 @@
   },
   "prisma": {
     "schema": "app/_prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0"
   }
 }
