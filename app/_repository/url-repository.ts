@@ -4,7 +4,7 @@ import { prisma } from '../_db/db';
 
 export async function getUrl(data: FormData) {
   const shortUrl = data.get('slug') as string;
-  const url = await prisma.url.findFirst({ where: { shortUrl } });
+  const url = await prisma.url.findUnique({ where: { shortUrl } });
 
   if (!url) {
     throw {
@@ -32,4 +32,23 @@ export async function addUrl(data: FormData) {
   }
 
   return await prisma.url.create({ data: { fullUrl, shortUrl } });
+}
+
+export async function updateUrl(data: FormData) {
+  const shortUrl = data.get('slug') as string;
+  const newUrl = data.get('url') as string;
+
+  const url = await prisma.url.findUnique({ where: { shortUrl } });
+
+  if (!url) {
+    throw {
+      status: 400,
+      message: 'Slug should be valid'
+    };
+  }
+
+  return await prisma.url.update({
+    where: { shortUrl },
+    data: { fullUrl: newUrl }
+  });
 }

@@ -7,11 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model url {
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  dob       DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  urls      Url[]
+}
+
+model Url {
   id        String   @id @default(uuid())
   fullUrl   String   @unique
-  shortUrl  String
+  shortUrl  String   @unique
   clicked   Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 }

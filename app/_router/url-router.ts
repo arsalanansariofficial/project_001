@@ -1,10 +1,14 @@
 import { Router } from 'express';
-import { addUrlHandler, getUrlHandler } from '../_middleware/url-handler';
+import * as urlHanlder from '../_middleware/url-handler';
 
 const router = Router();
 
-router.get('/:slug', getUrlHandler);
+router.get('/:slug', urlHanlder.getUrlHandler);
 
-router.post('/add', addUrlHandler);
+router.post('/add', urlHanlder.addUrlHandler);
+
+router.put('/:slug', urlHanlder.updateUrlHandler);
+
+router.delete('/delete', urlHanlder.addUrlHandler);
 
 export default router;
