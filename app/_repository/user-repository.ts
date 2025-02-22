@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 
 import { prisma } from '../_db/db';
+import { User } from '@prisma/client';
 
 const salt = process.env.SALT as string;
 const signature = process.env.SIGNATURE as string;
@@ -66,4 +67,17 @@ export async function loginUser(email: string, password: string) {
     throw { status: 400, message: 'Bad Request' };
 
   return createToken(user.id, signature);
+}
+
+export async function updateUser(user: User, exUser: User) {
+  if (!salt) throw { message: 'Internal Server Error' };
+
+  if (!verifyPassword(salt, exUser.password, user.password))
+    user.password = hashPassword(salt, user.password);
+  else user.password = exUser.password;
+
+  return await prisma.user.update({
+    where: { id: exUser.id },
+    data: { ...user }
+  });
 }
