@@ -1,4 +1,5 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 
 import urlRouter from './_router/url-router';
 import userRouter from './_router/user-router';
@@ -8,6 +9,7 @@ const PORT = process.env.PORT || 8080;
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));
 
 app.use(urlRouter);
