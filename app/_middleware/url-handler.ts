@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import { addUrl, getUrl, updateUrl } from '../_repository/url-repository';
+import * as urlRepo from '../_repository/url-repository';
 
 interface RequestBody {
   data: { url?: string; slug?: string };
@@ -23,7 +23,7 @@ function handleRequest(body: RequestBody) {
 
 export async function getUrlHandler(req: Request, res: Response) {
   try {
-    res.status(200).json(await getUrl(req.params.slug));
+    res.status(200).json(await urlRepo.getUrl(req.params.slug));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -32,7 +32,7 @@ export async function getUrlHandler(req: Request, res: Response) {
 export async function addUrlHandler(req: Request, res: Response) {
   try {
     const url = handleRequest(req.body).url as string;
-    res.status(201).json(await addUrl(url));
+    res.status(201).json(await urlRepo.addUrl(url));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -44,7 +44,20 @@ export async function updateUrlHandler(req: Request, res: Response) {
     body.data.slug = req.params.slug;
     res
       .status(201)
-      .json(await updateUrl(body.data.url as string, body.data.slug as string));
+      .json(
+        await urlRepo.updateUrl(
+          body.data.url as string,
+          body.data.slug as string
+        )
+      );
+  } catch (e: any) {
+    res.status(e.status || 500).json(e.error || { message: e.message });
+  }
+}
+
+export async function deleteUrlHandler(req: Request, res: Response) {
+  try {
+    res.status(200).json(await urlRepo.deleteUrl(req.params.slug));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }

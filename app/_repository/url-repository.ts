@@ -44,3 +44,15 @@ export async function updateUrl(fullUrl: string, shortUrl: string) {
     data: { fullUrl }
   });
 }
+
+export async function deleteUrl(shortUrl: string) {
+  const url = await prisma.url.findUnique({ where: { shortUrl } });
+
+  if (!url)
+    throw {
+      status: 400,
+      message: 'Slug should be valid'
+    };
+
+  return await prisma.url.delete({ where: { fullUrl: url.fullUrl } });
+}

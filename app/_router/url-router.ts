@@ -9,6 +9,6 @@ router.post('/add', urlHanlder.addUrlHandler);
 
 router.put('/:slug', urlHanlder.updateUrlHandler);
 
-router.delete('/delete', urlHanlder.addUrlHandler);
+router.delete('/:slug', urlHanlder.deleteUrlHandler);
 
 export default router;
