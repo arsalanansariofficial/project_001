@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 
 import * as userRepo from '../_repository/user-repository';
 
+const expiresIn = Number(process.env.EXPIRES_IN as string);
+
 const validPassword =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -37,16 +39,21 @@ export async function signupHandler(req: Request, res: Response) {
         }
       };
 
+    const { token } = await userRepo.singupUser(
+      dob.toISOString(),
+      data.name,
+      data.email,
+      data.password
+    );
+
     res
-      .status(200)
-      .json(
-        await userRepo.singupUser(
-          dob.toISOString(),
-          data.name,
-          data.email,
-          data.password
-        )
-      );
+      .status(201)
+      .cookie('token', token, {
+        secure: true,
+        httpOnly: true,
+        maxAge: expiresIn
+      })
+      .send();
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -74,7 +81,16 @@ export async function loginHandler(req: Request, res: Response) {
         }
       };
 
-    res.status(200).json(await userRepo.loginUser(data.email, data.password));
+    const { token } = await userRepo.loginUser(data.email, data.password);
+
+    res
+      .status(201)
+      .cookie('token', token, {
+        secure: true,
+        httpOnly: true,
+        maxAge: expiresIn
+      })
+      .send();
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
