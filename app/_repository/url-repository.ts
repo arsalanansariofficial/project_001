@@ -2,16 +2,14 @@ import crypto from 'node:crypto';
 
 import { prisma } from '../_db/db';
 
-export async function getUrl(data: FormData) {
-  const shortUrl = data.get('slug') as string;
+export async function getUrl(shortUrl: string) {
   const url = await prisma.url.findUnique({ where: { shortUrl } });
 
-  if (!url) {
+  if (!url)
     throw {
       status: 400,
       message: 'Slug should be valid'
     };
-  }
 
   return await prisma.url.update({
     where: { fullUrl: url.fullUrl },
@@ -19,36 +17,30 @@ export async function getUrl(data: FormData) {
   });
 }
 
-export async function addUrl(data: FormData) {
-  const fullUrl = data.get('url') as string;
+export async function addUrl(url: string) {
   const shortUrl = crypto.randomBytes(4).toString('hex');
-  const url = await prisma.url.findUnique({ where: { fullUrl } });
+  const exUrl = await prisma.url.findUnique({ where: { fullUrl: url } });
 
-  if (url) {
+  if (exUrl)
     throw {
       status: 400,
       message: 'URL should be unique'
     };
-  }
 
-  return await prisma.url.create({ data: { fullUrl, shortUrl } });
+  return await prisma.url.create({ data: { shortUrl, fullUrl: url } });
 }
 
-export async function updateUrl(data: FormData) {
-  const shortUrl = data.get('slug') as string;
-  const newUrl = data.get('url') as string;
+export async function updateUrl(fullUrl: string, shortUrl: string) {
+  const exURL = await prisma.url.findUnique({ where: { shortUrl } });
 
-  const url = await prisma.url.findUnique({ where: { shortUrl } });
-
-  if (!url) {
+  if (!exURL)
     throw {
       status: 400,
       message: 'Slug should be valid'
     };
-  }
 
   return await prisma.url.update({
     where: { shortUrl },
-    data: { fullUrl: newUrl }
+    data: { fullUrl }
   });
 }

@@ -7,7 +7,7 @@ interface RequestBody {
 }
 
 function handleRequest(body: RequestBody) {
-  if (!body?.data || !body?.data?.url) {
+  if (!body?.data || !body?.data?.url)
     throw {
       status: 400,
       error: {
@@ -17,25 +17,13 @@ function handleRequest(body: RequestBody) {
         }
       }
     };
-  }
 
-  const formdata = new FormData();
-
-  Object.keys(body.data).forEach(key => {
-    formdata.append(key, body.data[key as keyof typeof body.data] as string);
-  });
-
-  return formdata;
+  return body.data;
 }
 
 export async function getUrlHandler(req: Request, res: Response) {
   try {
-    const slug = req.params.slug;
-
-    const formdata = new FormData();
-    formdata.set('slug', slug);
-
-    res.status(200).json(await getUrl(formdata));
+    res.status(200).json(await getUrl(req.params.slug));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -43,8 +31,8 @@ export async function getUrlHandler(req: Request, res: Response) {
 
 export async function addUrlHandler(req: Request, res: Response) {
   try {
-    const formdata = handleRequest(req.body);
-    res.status(201).json(await addUrl(formdata));
+    const url = handleRequest(req.body).url as string;
+    res.status(201).json(await addUrl(url));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -53,11 +41,10 @@ export async function addUrlHandler(req: Request, res: Response) {
 export async function updateUrlHandler(req: Request, res: Response) {
   try {
     const body = req.body as RequestBody;
-
     body.data.slug = req.params.slug;
-    const formdata = handleRequest(body);
-
-    res.status(201).json(await updateUrl(formdata));
+    res
+      .status(201)
+      .json(await updateUrl(body.data.url as string, body.data.slug as string));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
