@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Token {
+  id     String  @id @default(uuid())
+  token  String
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
@@ -16,6 +23,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   urls      Url[]
+  Token     Token[]
 }
 
 model Url {
