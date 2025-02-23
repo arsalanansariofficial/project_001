@@ -1,4 +1,4 @@
-import z from 'zod';
+import z, { ZodSchema } from 'zod';
 import { User } from '@prisma/client';
 import { Request, Response } from 'express';
 
@@ -28,16 +28,14 @@ export const updateSchema = z.object({
   password: z.string().regex(validPassword).optional()
 });
 
-function parseReq(
-  req: Request,
-  schema: typeof loginSchema | typeof signupSchema | typeof updateSchema
-) {
+export function parseReq<T extends ZodSchema>(req: Request, schema: T) {
   const result = schema.safeParse(req.body.data);
 
   if (result.error) {
     const fieldErrors = new Map<string, string>();
     const e = Object.entries(result.error.flatten().fieldErrors);
-    for (const [key, value] of e) fieldErrors.set(key, value.join(', '));
+    for (const [key, value] of e)
+      if (value) fieldErrors.set(key, value.join(', '));
 
     throw {
       status: 400,
@@ -50,12 +48,12 @@ function parseReq(
     };
   }
 
-  return result.data;
+  return result.data as z.infer<T>;
 }
 
 export async function signupHandler(req: Request, res: Response) {
   try {
-    const user = parseReq(req, signupSchema) as z.infer<typeof signupSchema>;
+    const user = parseReq(req, signupSchema);
     user.dob = new Date(user.dob).toISOString();
 
     const token = await userRepo.singupUser(
@@ -76,7 +74,7 @@ export async function signupHandler(req: Request, res: Response) {
 
 export async function loginHandler(req: Request, res: Response) {
   try {
-    const user = parseReq(req, loginSchema) as z.infer<typeof loginSchema>;
+    const user = parseReq(req, loginSchema);
     const token = await userRepo.loginUser(user.email, user.password);
 
     res
@@ -93,7 +91,7 @@ export async function updateUserHandler(
   res: Response
 ) {
   try {
-    const user = parseReq(req, updateSchema) as z.infer<typeof updateSchema>;
+    const user = parseReq(req, updateSchema);
     if (user.dob) user.dob = new Date(user.dob).toISOString();
     res.status(201).json(await userRepo.updateUser(req.user as User, user));
   } catch (e: any) {
