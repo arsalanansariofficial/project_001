@@ -1,4 +1,6 @@
 _db
 .env
+dist
 node_modules
-app/_prisma/migrations/*
+app/_prisma/db
+app/_prisma/migrations
