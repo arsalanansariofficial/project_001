@@ -1,34 +1,11 @@
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
-import crypto from 'node:crypto';
-import { Token, User } from '@prisma/client';
+import { Token, User, PrismaClient } from '@prisma/client';
 
-import { prisma } from '../_db/db';
-import { updateSchema } from '../_middleware/user-handler';
+import { hashPassword, verifyPassword } from '../_lib/utils';
+import { expiresIn, salt, signature, updateSchema } from '../_lib/const';
 
-const salt = process.env.SALT as string;
-const signature = process.env.SIGNATURE as string;
-const expiresIn = Number(process.env.EXPIRES_IN as string);
-
-function verifyPassword(salt: string, hashed: string, password: string) {
-  return hashPassword(salt, password) === hashed;
-}
-
-function hashPassword(salt: string, password: string) {
-  return crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-}
-
-async function createToken(userId: string, signature: string) {
-  const token = await prisma.token.create({
-    data: { userId, token: jwt.sign({ userId }, signature, { expiresIn }) }
-  });
-
-  setTimeout(async () => {
-    await prisma.token.delete({ where: { id: token.id } });
-  }, expiresIn);
-
-  return token;
-}
+const prisma = new PrismaClient();
 
 export async function singupUser(
   dob: string,
@@ -56,7 +33,18 @@ export async function singupUser(
     }
   });
 
-  return createToken(user.id, signature);
+  const token = await prisma.token.create({
+    data: {
+      userId: user.id,
+      token: jwt.sign({ userId: user.id }, signature, { expiresIn })
+    }
+  });
+
+  setTimeout(async () => {
+    await prisma.token.delete({ where: { id: token.id } });
+  }, expiresIn);
+
+  return token;
 }
 
 export async function loginUser(email: string, password: string) {
@@ -68,7 +56,18 @@ export async function loginUser(email: string, password: string) {
   if (!user || !verifyPassword(salt, user.password, password))
     throw { status: 400, message: 'Bad Request' };
 
-  return createToken(user.id, signature);
+  const token = await prisma.token.create({
+    data: {
+      userId: user.id,
+      token: jwt.sign({ userId: user.id }, signature, { expiresIn })
+    }
+  });
+
+  setTimeout(async () => {
+    await prisma.token.delete({ where: { id: token.id } });
+  }, expiresIn);
+
+  return token;
 }
 
 export async function logoutUser(user: User, token: string) {
@@ -87,11 +86,14 @@ export async function updateUser(
   else user.password = exUser.password;
 
   return await prisma.user.update({
-    where: { id: exUser.id },
-    data: { ...user }
+    data: { ...user },
+    where: { id: exUser.id }
   });
 }
 
 export async function deleteUser(userId: string) {
-  return await prisma.user.delete({ where: { id: userId } });
+  return await prisma.user.delete({
+    where: { id: userId },
+    select: { id: true }
+  });
 }

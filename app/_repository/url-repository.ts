@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
+import { User, PrismaClient } from '@prisma/client';
 
-import { prisma } from '../_db/db';
-import { User } from '@prisma/client';
+const prisma = new PrismaClient();
 
 export async function getUrl(shortUrl: string) {
   const url = await prisma.url.findUnique({ where: { shortUrl } });
