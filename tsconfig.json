@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
     "strict": true,
-    "target": "es2016",
+    "outDir": "dist",
+    "rootDir": "app",
+    "target": "es2020",
     "module": "commonjs",
     "skipLibCheck": true,
     "esModuleInterop": true
-  }
+  },
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }
