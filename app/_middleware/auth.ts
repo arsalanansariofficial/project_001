@@ -1,10 +1,10 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { User, PrismaClient } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 
-import { prisma } from '../_db/db';
-import { User } from '@prisma/client';
+import { signature } from '../_lib/const';
 
-const signature = process.env.SIGNATURE as string;
+const prisma = new PrismaClient();
 
 export default async function (
   req: Request & { user?: User },
@@ -23,6 +23,14 @@ export default async function (
     const user = await prisma.user.findUnique({
       where: { id: userId, Token: { some: { token } } }
     });
+
+    // console.log(
+    //   userId,
+    //   user,
+    //   await prisma.user.findUnique({
+    //     where: { id: userId }
+    //   })
+    // );
 
     if (!user) throw { status: 401, error: { message: 'Unauthorized' } };
 
