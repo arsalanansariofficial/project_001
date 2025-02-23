@@ -11,6 +11,6 @@ router.post('/user/signup', userHandler.signupHandler);
 
 router.put('/user/update', auth, userHandler.updateUserHandler);
 
-// router.delete('/user/delete', userHandler.deleteUrlHandler);
+router.delete('/user/delete', auth, userHandler.deleteUserHandler);
 
 export default router;

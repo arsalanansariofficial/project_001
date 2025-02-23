@@ -100,3 +100,14 @@ export async function updateUserHandler(
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
 }
+
+export async function deleteUserHandler(
+  req: Request & { user?: User },
+  res: Response
+) {
+  try {
+    res.status(201).json(await userRepo.deleteUser((req.user as User).id));
+  } catch (e: any) {
+    res.status(e.status || 500).json(e.error || { message: e.message });
+  }
+}
