@@ -9,7 +9,7 @@ const urlSchema = z.object({ url: z.string().url() });
 
 export async function getUrlHandler(req: Request, res: Response) {
   try {
-    res.status(201).json(await urlRepo.getUrl(req.params.slug));
+    res.redirect((await urlRepo.getUrl(req.params.slug)).fullUrl);
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
