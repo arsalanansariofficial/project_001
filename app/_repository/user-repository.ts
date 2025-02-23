@@ -1,8 +1,10 @@
+import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
+import { User } from '@prisma/client';
 
 import { prisma } from '../_db/db';
-import { User } from '@prisma/client';
+import { updateSchema } from '../_middleware/user-handler';
 
 const salt = process.env.SALT as string;
 const signature = process.env.SIGNATURE as string;
@@ -25,7 +27,7 @@ async function createToken(userId: string, signature: string) {
     await prisma.token.delete({ where: { id: token.id } });
   }, expiresIn);
 
-  return { token: token.token };
+  return token;
 }
 
 export async function singupUser(
@@ -69,10 +71,13 @@ export async function loginUser(email: string, password: string) {
   return createToken(user.id, signature);
 }
 
-export async function updateUser(user: User, exUser: User) {
+export async function updateUser(
+  exUser: User,
+  user: z.infer<typeof updateSchema>
+) {
   if (!salt) throw { message: 'Internal Server Error' };
 
-  if (!verifyPassword(salt, exUser.password, user.password))
+  if (user.password && !verifyPassword(salt, exUser.password, user.password))
     user.password = hashPassword(salt, user.password);
   else user.password = exUser.password;
 

@@ -1,3 +1,4 @@
+import z from 'zod';
 import { User } from '@prisma/client';
 import { Request, Response } from 'express';
 
@@ -8,58 +9,66 @@ const expiresIn = Number(process.env.EXPIRES_IN as string);
 const validPassword =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-const validEmail =
-  /^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{1,5}|[0-9]{1,3})(\]?)$/;
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().regex(validPassword)
+});
 
-function parseSignupReq(req: Request) {
-  const data = req.body?.data;
-  const name = data && data?.name;
-  const dob = data && new Date(data?.dob);
+const signupSchema = z.object({
+  dob: z.string().date(),
+  name: z.string().min(8),
+  email: z.string().email(),
+  password: z.string().regex(validPassword)
+});
 
-  const isValidDob = !isNaN((dob as Date).getTime());
-  const isValidEmail = data && data?.email && validEmail.test(data.email);
-  const isValidPassword =
-    data && data?.password && validPassword.test(data.password);
-  const isValidReq =
-    data && name && isValidDob && isValidEmail && isValidPassword;
+export const updateSchema = z.object({
+  dob: z.string().date().optional(),
+  name: z.string().min(8).optional(),
+  email: z.string().email().optional(),
+  password: z.string().regex(validPassword).optional()
+});
 
-  if (!isValidReq)
+function parseReq(
+  req: Request,
+  schema: typeof loginSchema | typeof signupSchema | typeof updateSchema
+) {
+  const result = schema.safeParse(req.body.data);
+
+  if (result.error) {
+    const fieldErrors = new Map<string, string>();
+    const e = Object.entries(result.error.flatten().fieldErrors);
+    for (const [key, value] of e) fieldErrors.set(key, value.join(', '));
+
     throw {
       status: 400,
       error: {
         path: {
-          data: data ? undefined : 'Should be a valid data',
-          name: name ? undefined : 'Should be a valid name',
-          email: isValidEmail ? undefined : 'Should be a valid email',
-          dob: isValidDob ? undefined : 'Should be a valid dob as DD-MM-YYY',
-          password: isValidPassword
-            ? undefined
-            : 'Should be a valid password as Password@123'
+          ...Object.fromEntries(fieldErrors),
+          data: req.body.data ? undefined : 'Should be a valid data'
         }
       }
     };
+  }
 
-  return { ...data, dob: dob.toISOString() };
+  return result.data;
 }
 
 export async function signupHandler(req: Request, res: Response) {
   try {
-    const data = parseSignupReq(req);
+    const user = parseReq(req, signupSchema) as z.infer<typeof signupSchema>;
+    user.dob = new Date(user.dob).toISOString();
 
-    const { token } = await userRepo.singupUser(
-      data.dob,
-      data.name,
-      data.email,
-      data.password
+    const token = await userRepo.singupUser(
+      user.dob,
+      user.name,
+      user.email,
+      user.password
     );
 
     res
       .status(201)
-      .cookie('token', token, {
-        httpOnly: true,
-        maxAge: expiresIn
-      })
-      .send();
+      .cookie('token', token.token, { httpOnly: true, maxAge: expiresIn })
+      .json({ id: token.id });
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -67,35 +76,13 @@ export async function signupHandler(req: Request, res: Response) {
 
 export async function loginHandler(req: Request, res: Response) {
   try {
-    const data = req.body?.data;
-    const isValidEmail = data && data?.email && validEmail.test(data.email);
-    const isValidPassword =
-      data && data?.password && validPassword.test(data.password);
-    const isValidReq = data && isValidEmail && isValidPassword;
-
-    if (!isValidReq)
-      throw {
-        status: 400,
-        error: {
-          path: {
-            data: data ? undefined : 'Should be valid data',
-            email: isValidEmail ? undefined : 'Should be valid email',
-            password: isValidPassword
-              ? undefined
-              : 'Should be valid password as Password@123'
-          }
-        }
-      };
-
-    const { token } = await userRepo.loginUser(data.email, data.password);
+    const user = parseReq(req, loginSchema) as z.infer<typeof loginSchema>;
+    const token = await userRepo.loginUser(user.email, user.password);
 
     res
       .status(201)
-      .cookie('token', token, {
-        httpOnly: true,
-        maxAge: expiresIn
-      })
-      .send();
+      .cookie('token', token.token, { httpOnly: true, maxAge: expiresIn })
+      .json({ id: token.id });
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
@@ -106,9 +93,9 @@ export async function updateUserHandler(
   res: Response
 ) {
   try {
-    res
-      .status(201)
-      .json(await userRepo.updateUser(parseSignupReq(req), req.user as User));
+    const user = parseReq(req, updateSchema) as z.infer<typeof updateSchema>;
+    if (user.dob) user.dob = new Date(user.dob).toISOString();
+    res.status(201).json(await userRepo.updateUser(req.user as User, user));
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
