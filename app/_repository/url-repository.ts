@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
 import { prisma } from '../_db/db';
+import { User } from '@prisma/client';
 
 export async function getUrl(shortUrl: string) {
   const url = await prisma.url.findUnique({ where: { shortUrl } });
@@ -17,7 +18,7 @@ export async function getUrl(shortUrl: string) {
   });
 }
 
-export async function addUrl(url: string) {
+export async function addUrl(url: string, user: User) {
   const shortUrl = crypto.randomBytes(4).toString('hex');
   const exUrl = await prisma.url.findUnique({ where: { fullUrl: url } });
 
@@ -27,7 +28,9 @@ export async function addUrl(url: string) {
       message: 'URL should be unique'
     };
 
-  return await prisma.url.create({ data: { shortUrl, fullUrl: url } });
+  return await prisma.url.create({
+    data: { shortUrl, fullUrl: url, userId: user.id }
+  });
 }
 
 export async function updateUrl(fullUrl: string, shortUrl: string) {

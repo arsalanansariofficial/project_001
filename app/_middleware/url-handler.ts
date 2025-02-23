@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { User } from '@prisma/client';
 import { Request, Response } from 'express';
 
 import { parseReq } from './user-handler';
@@ -14,9 +15,16 @@ export async function getUrlHandler(req: Request, res: Response) {
   }
 }
 
-export async function addUrlHandler(req: Request, res: Response) {
+export async function addUrlHandler(
+  req: Request & { user?: User },
+  res: Response
+) {
   try {
-    res.status(201).json(await urlRepo.addUrl(parseReq(req, urlSchema).url));
+    res
+      .status(201)
+      .json(
+        await urlRepo.addUrl(parseReq(req, urlSchema).url, req.user as User)
+      );
   } catch (e: any) {
     res.status(e.status || 500).json(e.error || { message: e.message });
   }
