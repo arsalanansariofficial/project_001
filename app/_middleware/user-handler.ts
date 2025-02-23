@@ -86,6 +86,25 @@ export async function loginHandler(req: Request, res: Response) {
   }
 }
 
+export async function logoutHandler(
+  req: Request & { user?: User },
+  res: Response
+) {
+  try {
+    const token = await userRepo.logoutUser(
+      req.user as User,
+      req.cookies.token
+    );
+
+    res
+      .status(201)
+      .cookie('token', token.token, { httpOnly: true, maxAge: expiresIn })
+      .json({ id: token.id });
+  } catch (e: any) {
+    res.status(e.status || 500).json(e.error || { message: e.message });
+  }
+}
+
 export async function updateUserHandler(
   req: Request & { user?: User },
   res: Response

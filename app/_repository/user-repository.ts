@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
-import { User } from '@prisma/client';
+import { Token, User } from '@prisma/client';
 
 import { prisma } from '../_db/db';
 import { updateSchema } from '../_middleware/user-handler';
@@ -69,6 +69,11 @@ export async function loginUser(email: string, password: string) {
     throw { status: 400, message: 'Bad Request' };
 
   return createToken(user.id, signature);
+}
+
+export async function logoutUser(user: User, token: string) {
+  const { id } = (await prisma.token.findFirst({ where: { token } })) as Token;
+  return await prisma.token.delete({ where: { id } });
 }
 
 export async function updateUser(
