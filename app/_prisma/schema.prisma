@@ -3,13 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model Token {
   id     String  @id @default(uuid())
-  token  String  @db.VarChar(256)
+  token  String
+  // token  String @db.VarChar(256) // if using mysql as db provider
   User   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String?
 }
